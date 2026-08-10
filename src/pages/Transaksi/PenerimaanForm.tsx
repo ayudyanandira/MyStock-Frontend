@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { penerimaanService, type CreatePOPayload, type ConfirmReceiptPayload } from "../../api/Services/penerimaanService";
-import { masterService } from "../../api/Services/masterService"; // 🟢 Pakai masterService
+import { masterService } from "../../api/Services/masterService";
 
 export const PenerimaanForm: React.FC = () => {
   const [listPO, setListPO] = useState<any[]>([]);
@@ -35,17 +35,12 @@ export const PenerimaanForm: React.FC = () => {
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      // 1. Load Data PO
       const dataPO = await penerimaanService.getPenerimaanList();
       setListPO(Array.isArray(dataPO) ? dataPO : (dataPO as any)?.data || []);
 
-      // 2. Load Data Supplier lewat masterService
-      // (Sesuaikan nama method di masterService.ts kamu, misal: getSuppliers, getSupplier, atau getMaster)
       const resSup: any = (await (masterService as any).getSuppliers?.()) || (await (masterService as any).getSupplier?.()) || [];
       setSuppliers(Array.isArray(resSup) ? resSup : resSup?.data || []);
 
-      // 3. Load Data Barang lewat masterService
-      // (Sesuaikan nama method di masterService.ts kamu, misal: getBarang atau getAllBarang)
       const resBrg: any = (await (masterService as any).getBarang?.()) || (await (masterService as any).getBarangs?.()) || [];
       setBarangs(Array.isArray(resBrg) ? resBrg : resBrg?.data || []);
     } catch (err) {
@@ -77,22 +72,18 @@ export const PenerimaanForm: React.FC = () => {
     }
 
     try {
-      // 1. Ekstrak data yang DIBUTUHKAN saja (Abaikan nomor_transaksi)
       const payload = {
         supplier_id: formPO.supplier_id,
         tanggal: formPO.tanggal,
         items: formPO.items,
       };
 
-      // 2. Kirim payload bersih ke backend
       await penerimaanService.createPO(payload);
-
       alert("Dokumen PO Berhasil Dibuat!");
       setShowCreateModal(false);
 
-      // 3. Reset form tanpa nomor_transaksi acak lagi
       setFormPO({
-        nomor_transaksi: "", // Kosongkan saja karena di-generate oleh backend
+        nomor_transaksi: "",
         supplier_id: 0,
         tanggal: new Date().toISOString().split("T")[0],
         items: [{ barang_id: 0, jumlah_pesanan: 1 }],
@@ -135,84 +126,140 @@ export const PenerimaanForm: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
+      {/* HEADER RESPONSIVE */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Penerimaan Barang Masuk</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Penerimaan Barang Masuk</h1>
           <p className="text-sm text-gray-500">Kelola pembuatan Purchase Order (PO) dan verifikasi barang masuk gudang</p>
         </div>
-        <button onClick={() => setShowCreateModal(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2.5 rounded-lg shadow-sm transition flex items-center gap-2">
+        <button onClick={() => setShowCreateModal(true)} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-sm">
           <span>+</span> Buat PO Baru
         </button>
       </div>
 
-      {/* TABEL DAFTAR PO / NOTA */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-            <tr>
-              <th className="p-4">No. PO / Nota</th>
-              <th className="p-4">Supplier</th>
-              <th className="p-4">Tgl Pemesanan</th>
-              <th className="p-4">Tgl Diterima</th>
-              <th className="p-4">Status</th>
-              <th className="p-4 text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 text-sm">
-            {loading ? (
+      {/* 1. TAMPILAN CARD (Hanya muncul di HP / Mobile) */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {loading ? (
+          <div className="bg-white p-6 rounded-xl text-center text-gray-500 border border-gray-200">Memuat data penerimaan...</div>
+        ) : listPO.length === 0 ? (
+          <div className="bg-white p-6 rounded-xl text-center text-gray-400 border border-gray-200">Belum ada riwayat PO atau penerimaan barang.</div>
+        ) : (
+          listPO.map((po) => (
+            <div key={po.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">NO. PO / NOTA</span>
+                  <p className="font-bold text-gray-800 text-base">{po.nomor_transaksi}</p>
+                </div>
+                {po.status === "pending" ? (
+                  <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800 border border-amber-200">Menunggu</span>
+                ) : (
+                  <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">Selesai</span>
+                )}
+              </div>
+
+              <div className="text-sm text-gray-600 space-y-1 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                <p>
+                  <span className="font-medium text-gray-500">Supplier:</span> {po.supplier?.nama || po.supplier?.nama_supplier || "-"}
+                </p>
+                <p>
+                  <span className="font-medium text-gray-500">Tgl Pesan:</span> {po.tanggal}
+                </p>
+                <p>
+                  <span className="font-medium text-gray-500">Tgl Terima:</span> {po.tanggal_terima || "-"}
+                </p>
+              </div>
+
+              {/* Tombol Aksi Mobile */}
+              <div className="pt-2 border-t border-gray-100 flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    setSelectedPO(po);
+                    setShowDetailModal(true);
+                  }}
+                  className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-xs transition">
+                  👁️ Lihat Nota
+                </button>
+                {po.status === "pending" && (
+                  <button onClick={() => handleOpenConfirm(po)} className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-xs transition shadow-sm">
+                    📦 Verifikasi Gudang
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* 2. TAMPILAN TABEL BIASA (Hanya muncul di Laptop/Desktop) */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-600 uppercase tracking-wider">
               <tr>
-                <td colSpan={6} className="text-center p-6 text-gray-500">
-                  Memuat data penerimaan...
-                </td>
+                <th className="p-4">No. PO / Nota</th>
+                <th className="p-4">Supplier</th>
+                <th className="p-4">Tgl Pemesanan</th>
+                <th className="p-4">Tgl Diterima</th>
+                <th className="p-4">Status</th>
+                <th className="p-4 text-center">Aksi</th>
               </tr>
-            ) : listPO.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center p-6 text-gray-400">
-                  Belum ada riwayat PO atau penerimaan barang.
-                </td>
-              </tr>
-            ) : (
-              listPO.map((po) => (
-                <tr key={po.id} className="hover:bg-gray-50/80 transition">
-                  <td className="p-4 font-semibold text-gray-800">{po.nomor_transaksi}</td>
-                  <td className="p-4 text-gray-600">{po.supplier?.nama || po.supplier?.nama_supplier || "-"}</td>
-                  <td className="p-4 text-gray-600">{po.tanggal}</td>
-                  <td className="p-4 text-gray-600">{po.tanggal_terima || "-"}</td>
-                  <td className="p-4">
-                    {po.status === "pending" ? (
-                      <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 text-xs font-medium px-2.5 py-1 rounded-full border border-amber-200">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                        Menunggu Barang
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-medium px-2.5 py-1 rounded-full border border-emerald-200">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        Selesai (Diterima)
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-4 text-center space-x-2">
-                    <button
-                      onClick={() => {
-                        setSelectedPO(po);
-                        setShowDetailModal(true);
-                      }}
-                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-xs font-medium transition">
-                      👁️ Lihat Nota
-                    </button>
-                    {po.status === "pending" && (
-                      <button onClick={() => handleOpenConfirm(po)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition shadow-sm">
-                        📦 Verifikasi Gudang
-                      </button>
-                    )}
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-sm">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="text-center p-6 text-gray-500">
+                    Memuat data penerimaan...
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : listPO.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center p-6 text-gray-400">
+                    Belum ada riwayat PO atau penerimaan barang.
+                  </td>
+                </tr>
+              ) : (
+                listPO.map((po) => (
+                  <tr key={po.id} className="hover:bg-gray-50/80 transition">
+                    <td className="p-4 font-semibold text-gray-800">{po.nomor_transaksi}</td>
+                    <td className="p-4 text-gray-600">{po.supplier?.nama || po.supplier?.nama_supplier || "-"}</td>
+                    <td className="p-4 text-gray-600">{po.tanggal}</td>
+                    <td className="p-4 text-gray-600">{po.tanggal_terima || "-"}</td>
+                    <td className="p-4">
+                      {po.status === "pending" ? (
+                        <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 text-xs font-medium px-2.5 py-1 rounded-full border border-amber-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                          Menunggu Barang
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 text-xs font-medium px-2.5 py-1 rounded-full border border-emerald-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                          Selesai (Diterima)
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4 text-center space-x-2">
+                      <button
+                        onClick={() => {
+                          setSelectedPO(po);
+                          setShowDetailModal(true);
+                        }}
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-xs font-medium transition">
+                        👁️ Lihat Nota
+                      </button>
+                      {po.status === "pending" && (
+                        <button onClick={() => handleOpenConfirm(po)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition shadow-sm">
+                          📦 Verifikasi Gudang
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* MODAL 1: BUAT PO BARU */}
@@ -282,7 +329,7 @@ export const PenerimaanForm: React.FC = () => {
                         newItems[idx].jumlah_pesanan = Number(e.target.value);
                         setFormPO({ ...formPO, items: newItems });
                       }}
-                      className="w-28 border rounded-lg p-2 text-sm text-center focus:ring-2 focus:ring-emerald-500 outline-none"
+                      className="w-24 sm:w-28 border rounded-lg p-2 text-sm text-center focus:ring-2 focus:ring-emerald-500 outline-none"
                       min="1"
                       required
                     />
@@ -339,8 +386,8 @@ export const PenerimaanForm: React.FC = () => {
                 />
               </div>
 
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full text-left text-sm">
+              <div className="border rounded-lg overflow-x-auto">
+                <table className="w-full text-left text-sm min-w-[500px]">
                   <thead className="bg-gray-50 border-b text-xs font-semibold text-gray-600 uppercase">
                     <tr>
                       <th className="p-3">Nama Barang</th>
@@ -366,7 +413,7 @@ export const PenerimaanForm: React.FC = () => {
                                 items: updated,
                               });
                             }}
-                            className="w-24 border rounded p-1 text-center font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none"
+                            className="w-20 border rounded p-1 text-center font-bold text-emerald-700 focus:ring-2 focus:ring-emerald-500 outline-none"
                             min="0"
                             required
                           />
@@ -407,10 +454,10 @@ export const PenerimaanForm: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL 3: BUKA DETIL NOTA (KAPAN SAJA) */}
+      {/* MODAL 3: BUKA DETIL NOTA */}
       {showDetailModal && selectedPO && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-2xl w-full p-6 shadow-xl">
+          <div className="bg-white rounded-xl max-w-2xl w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start border-b pb-3 mb-4">
               <div>
                 <h2 className="text-xl font-bold text-gray-800">Nota PO #{selectedPO.nomor_transaksi}</h2>
@@ -419,7 +466,7 @@ export const PenerimaanForm: React.FC = () => {
               <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedPO.status === "completed" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>{selectedPO.status.toUpperCase()}</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4 text-xs bg-gray-50 p-3 rounded-lg border">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 text-xs bg-gray-50 p-3 rounded-lg border">
               <div>
                 <span className="text-gray-500">Tanggal Pesan:</span> <span className="font-semibold text-gray-800">{selectedPO.tanggal}</span>
               </div>
@@ -429,8 +476,8 @@ export const PenerimaanForm: React.FC = () => {
             </div>
 
             <h3 className="font-semibold mb-2 text-xs text-gray-600 uppercase tracking-wider">Rincian Barang Dipesan & Diterima:</h3>
-            <div className="border rounded-lg overflow-hidden mb-6">
-              <table className="w-full text-left text-sm">
+            <div className="border rounded-lg overflow-x-auto mb-6">
+              <table className="w-full text-left text-sm min-w-[450px]">
                 <thead className="bg-gray-100 border-b text-xs font-semibold text-gray-600">
                   <tr>
                     <th className="p-2.5">Nama Barang</th>
