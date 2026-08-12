@@ -118,6 +118,7 @@ export const PenggunaanForm: React.FC = () => {
                     </label>
                     <input
                       type="number"
+                      step="any"
                       min={1}
                       max={selectedBarang?.stok}
                       value={item.jumlah}

@@ -114,6 +114,7 @@ export const StokOpnameForm: React.FC = () => {
                       <td className="p-3 text-center">
                         <input
                           type="number"
+                          step="any"
                           min={0}
                           value={item.stok_fisik}
                           onChange={(e) => handleFisikChange(idx, Number(e.target.value))}

@@ -322,6 +322,7 @@ export const PenerimaanForm: React.FC = () => {
                     </select>
                     <input
                       type="number"
+                      step="any"
                       placeholder="Jumlah"
                       value={item.jumlah_pesanan}
                       onChange={(e) => {
@@ -404,6 +405,7 @@ export const PenerimaanForm: React.FC = () => {
                         <td className="p-3 text-center">
                           <input
                             type="number"
+                            step="any"
                             value={item.jumlah_diterima}
                             onChange={(e) => {
                               const updated = [...formConfirm.items];
