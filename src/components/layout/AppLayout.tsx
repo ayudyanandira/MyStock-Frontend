@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { LayoutDashboard, Package, ArrowDownLeft, ArrowUpRight, ClipboardCheck, FileText, Users, LogOut, Menu, X } from "lucide-react";
+import logoBGN from "../../assets/Logo-bgn.png";
 
 export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
@@ -21,7 +22,9 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       {/* 🟢 SIDEBAR (Desktop) */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 min-h-screen p-4 sticky top-0 h-screen">
         <div className="flex items-center gap-3 px-2 py-3 border-b border-slate-100">
-          <div className="h-10 w-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-extrabold text-xl shadow-sm">S</div>
+          {/* GELANTI BAGIAN INI: */}
+          <img src={logoBGN} alt="Logo BGN" className="h-10 w-10 object-contain rounded-xl" />
+
           <div>
             <h1 className="font-bold text-slate-800 text-sm leading-tight">SPPG Munggur</h1>
             <p className="text-[11px] text-slate-500">Stok Bahan Pangan</p>
@@ -60,7 +63,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       {/* 🔵 HEADER (Mobile Only) */}
       <header className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-30 shadow-xs">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-sm">S</div>
+          <img src={logoBGN} alt="Logo BGN" className="h-10 w-10 object-contain rounded-xl" />
           <span className="font-bold text-slate-800 text-sm">SPPG Munggur</span>
         </div>
         <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-slate-600 rounded-lg bg-slate-100">
