@@ -45,18 +45,29 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           <NavItem icon={<FileText size={20} />} label="Laporan & Export" active={isActive("/laporan")} onClick={() => navigate("/laporan")} />
         </nav>
 
-        {/* User Profile Footer */}
-        <div className="border-t border-slate-100 pt-3 flex items-center justify-between px-2">
-          <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-700 text-xs shrink-0">{user?.name ? user.name.substring(0, 2).toUpperCase() : "US"}</div>
-            <div className="truncate">
-              <p className="text-xs font-bold text-slate-800 truncate">{user?.name || "User"}</p>
-              <span className="inline-block text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-semibold">{user?.role || "Admin"}</span>
+        {/* User Profile & Copyright Footer */}
+        <div className="border-t border-slate-100 pt-3 px-2 space-y-3">
+          {/* BARIS 1: USER PROFILE + LOGOUT */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5 overflow-hidden">
+              <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-700 text-xs shrink-0">{user?.name ? user.name.substring(0, 2).toUpperCase() : "US"}</div>
+              <div className="truncate">
+                <p className="text-xs font-bold text-slate-800 truncate">{user?.name || "User"}</p>
+                <span className="inline-block text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">{user?.role || "Admin"}</span>
+              </div>
             </div>
+
+            <button onClick={handleLogout} title="Keluar" className="text-slate-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition shrink-0">
+              <LogOut size={18} />
+            </button>
           </div>
-          <button onClick={handleLogout} title="Keluar" className="text-slate-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition">
-            <LogOut size={18} />
-          </button>
+
+          {/* BARIS 2: COPYRIGHT (TARUH DI BAWAH PROFILE) */}
+          <div className="pt-2 border-t border-slate-100/60">
+            <p className="text-[10px] text-slate-400 text-center tracking-wide leading-tight">
+              Copyright © {new Date().getFullYear()} <span className="font-medium text-slate-600">Ayudya Nandira Afifah</span>. All rights reserved.
+            </p>
+          </div>
         </div>
       </aside>
 
@@ -152,6 +163,11 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
               <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 p-2.5 rounded-xl text-xs font-bold">
                 <LogOut size={16} /> Keluar Aplikasi
               </button>
+              <footer className="w-full py-4 text-center text-xs text-slate-500 border-t border-slate-200 mt-auto">
+                <p className="text-[10px] text-slate-400 text-center tracking-wide">
+                  Copyright © {new Date().getFullYear()} <span className="font-medium text-slate-600">Ayudya Nandira Afifah</span>. All rights reserved.
+                </p>
+              </footer>
             </div>
           </div>
           <div className="flex-1" onClick={() => setMobileMenuOpen(false)}></div>

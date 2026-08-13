@@ -265,16 +265,16 @@ export const PenerimaanForm: React.FC = () => {
 
       {/* MODAL 1: BUAT PO BARU */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-2xl w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Buat Purchase Order (PO) Baru</h2>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50">
+          <div className="bg-white rounded-xl max-w-2xl w-full p-4 sm:p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4 border-b pb-2">Buat Purchase Order (PO) Baru</h2>
 
             <form onSubmit={handleSavePO} className="space-y-4">
               {/* HEADER FORM */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Nomor PO</label>
-                  <input type="text" value="(Otomatis oleh sistem)" disabled className="w-full border rounded-lg p-2 text-sm bg-gray-100 text-gray-500 cursor-not-allowed outline-none" />
+                  <input type="text" value="(Otomatis oleh sistem)" disabled className="w-full border rounded-lg p-2 text-xs sm:text-sm bg-gray-100 text-gray-500 cursor-not-allowed outline-none" />
                 </div>
 
                 <div>
@@ -287,7 +287,7 @@ export const PenerimaanForm: React.FC = () => {
                         supplier_id: Number(e.target.value),
                       })
                     }
-                    className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                    className="w-full border rounded-lg p-2 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
                     required>
                     <option value={0}>-- Pilih Supplier --</option>
                     {suppliers.map((s) => (
@@ -300,15 +300,21 @@ export const PenerimaanForm: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Tanggal Pesan *</label>
-                  <input type="date" value={formPO.tanggal} onChange={(e) => setFormPO({ ...formPO, tanggal: e.target.value })} className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" required />
+                  <input
+                    type="date"
+                    value={formPO.tanggal}
+                    onChange={(e) => setFormPO({ ...formPO, tanggal: e.target.value })}
+                    className="w-full border rounded-lg p-2 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                    required
+                  />
                 </div>
               </div>
 
               {/* LIST ITEM PESANAN */}
               <div className="border-t pt-4 mt-2">
-                <label className="block font-semibold text-sm text-gray-700 mb-2">Daftar Bahan / Barang Dipesan</label>
+                <label className="block font-semibold text-xs sm:text-sm text-gray-700 mb-2">Daftar Bahan / Barang Dipesan</label>
 
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {formPO.items.map((item, idx) => {
                     // Format data barang untuk React Select
                     const barangOptions = barangs.map((b) => ({
@@ -323,9 +329,9 @@ export const PenerimaanForm: React.FC = () => {
                     const namaSatuan = selectedBarang ? (typeof selectedBarang.satuan === "object" ? selectedBarang.satuan?.nama : selectedBarang.satuan) : "-";
 
                     return (
-                      <div key={idx} className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
-                        {/* SELECT BARANG BISA DICARI (REACT-SELECT) */}
-                        <div className="flex-1 min-w-0">
+                      <div key={idx} className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center gap-2 relative">
+                        {/* 1. SELECT BARANG (Full-Width di Mobile) */}
+                        <div className="w-full sm:flex-1">
                           <Select
                             options={barangOptions}
                             value={selectedOption || null}
@@ -336,7 +342,7 @@ export const PenerimaanForm: React.FC = () => {
                             }}
                             placeholder="-- Cari / Pilih Barang --"
                             isSearchable={true}
-                            className="text-sm"
+                            className="text-xs sm:text-sm"
                             styles={{
                               control: (base) => ({
                                 ...base,
@@ -344,46 +350,52 @@ export const PenerimaanForm: React.FC = () => {
                                 borderColor: "#cbd5e1",
                                 minHeight: "38px",
                               }),
+                              menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                             }}
+                            menuPortalTarget={document.body}
                           />
                         </div>
 
-                        {/* INPUT JUMLAH */}
-                        <input
-                          type="number"
-                          step="any"
-                          placeholder="Jumlah"
-                          value={item.jumlah_pesanan || ""}
-                          onChange={(e) => {
-                            const newItems = [...formPO.items];
-                            newItems[idx].jumlah_pesanan = Number(e.target.value);
-                            setFormPO({ ...formPO, items: newItems });
-                          }}
-                          className="w-20 sm:w-24 border border-slate-300 rounded-lg p-2 text-sm text-center focus:ring-2 focus:ring-emerald-500 bg-white outline-none h-[38px]"
-                          min="0.01"
-                          required
-                        />
+                        {/* BARIS KEDUA PADA MOBILE (Jumlah + Satuan + Tombol Hapus) */}
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+                          {/* INPUT JUMLAH */}
+                          <div className="flex-1 sm:flex-none">
+                            <input
+                              type="number"
+                              step="any"
+                              placeholder="Jumlah"
+                              value={item.jumlah_pesanan || ""}
+                              onChange={(e) => {
+                                const newItems = [...formPO.items];
+                                newItems[idx].jumlah_pesanan = Number(e.target.value);
+                                setFormPO({ ...formPO, items: newItems });
+                              }}
+                              className="w-full sm:w-24 border border-slate-300 rounded-lg p-2 text-xs sm:text-sm text-center focus:ring-2 focus:ring-emerald-500 bg-white outline-none h-[38px]"
+                              min="0.01"
+                              required
+                            />
+                          </div>
 
-                        {/* BADGE SATUAN OTOMATIS */}
-                        <div className="w-16 sm:w-20 px-2 py-2 bg-slate-200 text-slate-700 text-xs font-medium rounded-lg text-center truncate border border-slate-300 flex items-center justify-center h-[38px]">{namaSatuan || "-"}</div>
+                          {/* BADGE SATUAN OTOMATIS */}
+                          <div className="w-20 sm:w-20 px-2 py-2 bg-slate-200 text-slate-700 text-xs font-medium rounded-lg text-center truncate border border-slate-300 flex items-center justify-center h-[38px]">{namaSatuan || "-"}</div>
 
-                        {/* TOMBOL HAPUS BARIS (TETAP BISA DIKLIK WALAU CUMA 1 BARIS) */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (formPO.items.length > 1) {
-                              handleRemoveRowItem(idx);
-                            } else {
-                              // Reset baris kalau sisa 1
-                              const newItems = [...formPO.items];
-                              newItems[0] = { barang_id: 0, jumlah_pesanan: 0 };
-                              setFormPO({ ...formPO, items: newItems });
-                            }
-                          }}
-                          className="p-2 bg-red-100 hover:bg-red-200 text-red-600 font-bold rounded-lg text-xs transition-colors shrink-0 h-[38px] w-[38px] flex items-center justify-center"
-                          title="Hapus / Reset baris">
-                          ✕
-                        </button>
+                          {/* TOMBOL HAPUS BARIS */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (formPO.items.length > 1) {
+                                handleRemoveRowItem(idx);
+                              } else {
+                                const newItems = [...formPO.items];
+                                newItems[0] = { barang_id: 0, jumlah_pesanan: 0 };
+                                setFormPO({ ...formPO, items: newItems });
+                              }
+                            }}
+                            className="p-2 bg-red-100 hover:bg-red-200 text-red-600 font-bold rounded-lg text-xs transition-colors shrink-0 h-[38px] w-[38px] flex items-center justify-center"
+                            title="Hapus / Reset baris">
+                            ✕
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -397,10 +409,10 @@ export const PenerimaanForm: React.FC = () => {
 
               {/* FOOTER BUTTONS */}
               <div className="flex justify-end gap-2 pt-4 border-t mt-4">
-                <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 border rounded-lg text-xs sm:text-sm text-gray-600 hover:bg-gray-50">
                   Batal
                 </button>
-                <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700">
+                <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-emerald-700">
                   Simpan PO
                 </button>
               </div>
