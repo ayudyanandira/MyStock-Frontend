@@ -11,6 +11,8 @@ import { PenerimaanForm } from "../pages/Transaksi/PenerimaanForm";
 import { PenggunaanForm } from "../pages/Transaksi/PenggunaanForm";
 import { StokOpnameForm } from "../pages/Transaksi/StokOpnameForm";
 import { LaporanList } from "../pages/Laporan/LaporanList";
+// 1. IMPORT KOMPONEN RIWAYAT MUTASI (Sesuaikan path foldernya)
+import RiwayatMutasi from "../pages/RiwayatMutasi";
 
 const LayoutWrapper = () => (
   <AppLayout>
@@ -32,6 +34,10 @@ export const AppRoutes: React.FC = () => {
             <Route path="/penerimaan" element={<PenerimaanForm />} />
             <Route path="/penggunaan" element={<PenggunaanForm />} />
             <Route path="/stok-opname" element={<StokOpnameForm />} />
+
+            {/* 2. TAMBAHKAN RUTE RIWAYAT MUTASI DI SINI */}
+            <Route path="/riwayat-mutasi" element={<RiwayatMutasi />} />
+
             <Route path="/laporan" element={<LaporanList />} />
           </Route>
         </Route>

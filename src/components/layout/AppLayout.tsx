@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { LayoutDashboard, Package, ArrowDownLeft, ArrowUpRight, ClipboardCheck, FileText, Users, LogOut, Menu, X } from "lucide-react";
 import logoBGN from "../../assets/Logo-bgn.png";
+import { History } from "lucide-react";
 
 export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
@@ -40,7 +41,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
           <NavItem icon={<ArrowDownLeft size={20} className="text-emerald-600" />} label="Penerimaan (Masuk)" active={isActive("/penerimaan")} onClick={() => navigate("/penerimaan")} />
           <NavItem icon={<ArrowUpRight size={20} className="text-amber-600" />} label="Penggunaan (Keluar)" active={isActive("/penggunaan")} onClick={() => navigate("/penggunaan")} />
           <NavItem icon={<ClipboardCheck size={20} className="text-blue-600" />} label="Stok Opname" active={isActive("/stok-opname")} onClick={() => navigate("/stok-opname")} />
-
+          <NavItem icon={<History size={20} />} label="Riwayat Mutasi Stok" active={isActive("/riwayat-mutasi")} onClick={() => navigate("/riwayat-mutasi")} />
           <div className="pt-4 pb-1 px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Laporan</div>
           <NavItem icon={<FileText size={20} />} label="Laporan & Export" active={isActive("/laporan")} onClick={() => navigate("/laporan")} />
         </nav>
@@ -148,6 +149,9 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                     setMobileMenuOpen(false);
                   }}
                 />
+
+                <NavItem icon={<History size={20} />} label="Riwayat Mutasi Stok" active={isActive("/riwayat-mutasi")} onClick={() => navigate("/riwayat-mutasi")} />
+
                 <NavItem
                   icon={<FileText size={18} />}
                   label="Laporan & Export"

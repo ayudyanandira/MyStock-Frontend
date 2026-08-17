@@ -30,4 +30,10 @@ export const penggunaanService = {
     const res = await api.post("/penggunaan", payload);
     return res.data;
   },
+
+  // ➕ Tambahkan method ini
+  getPenggunaanList: async () => {
+    const res = await api.get("/penggunaan");
+    return res.data;
+  },
 };

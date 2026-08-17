@@ -30,4 +30,10 @@ export const opnameService = {
     const res = await api.post("/stok-opname", payload);
     return res.data;
   },
+
+  // ➕ Tambahkan method ini
+  getOpnameList: async () => {
+    const res = await api.get("/stok-opname");
+    return res.data;
+  },
 };
