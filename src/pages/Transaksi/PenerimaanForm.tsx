@@ -107,18 +107,35 @@ export const PenerimaanForm: React.FC = () => {
         jumlah_pesanan: d.jumlah_pesanan,
         jumlah_diterima: d.jumlah_pesanan,
         kondisi: "Baik",
+        is_direct_consumption: false, // Default false
       })),
     });
     setShowConfirmModal(true);
   };
+
+  // GANTI FUNGSI handleSaveConfirm DENGAN INI:
 
   const handleSaveConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPO) return;
 
     try {
-      await penerimaanService.confirmReceipt(selectedPO.id, formConfirm);
-      alert("Penerimaan barang berhasil dikonfirmasi! Stok telah diperbarui.");
+      const payload = {
+        tanggal_terima: formConfirm.tanggal_terima,
+        items: formConfirm.items.map((item: any) => ({
+          barang_id: Number(item.barang_id),
+          jumlah_diterima: Number(item.jumlah_diterima),
+          kondisi: item.kondisi || "Baik",
+          // Gunakan pembanding eksplisit agar terjamin boolean true/false
+          is_direct_consumption: item.is_direct_consumption === true,
+        })),
+      };
+
+      console.log("Payload Final ke API:", payload);
+
+      await penerimaanService.confirmReceipt(selectedPO.id, payload);
+
+      alert("Penerimaan barang berhasil dikonfirmasi!");
       setShowConfirmModal(false);
       fetchInitialData();
     } catch (err: any) {
@@ -139,7 +156,7 @@ export const PenerimaanForm: React.FC = () => {
         </button>
       </div>
 
-      {/* 1. TAMPILAN CARD (Hanya muncul di HP / Mobile) */}
+      {/* 1. TAMPILAN CARD (Mobile) */}
       <div className="grid grid-cols-1 gap-4 md:hidden">
         {loading ? (
           <div className="bg-white p-6 rounded-xl text-center text-gray-500 border border-gray-200">Memuat data penerimaan...</div>
@@ -172,7 +189,6 @@ export const PenerimaanForm: React.FC = () => {
                 </p>
               </div>
 
-              {/* Tombol Aksi Mobile */}
               <div className="pt-2 border-t border-gray-100 flex flex-col gap-2">
                 <button
                   onClick={() => {
@@ -180,11 +196,11 @@ export const PenerimaanForm: React.FC = () => {
                     setShowDetailModal(true);
                   }}
                   className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-xs transition">
-                  👁️ Lihat Nota
+                  Lihat Nota
                 </button>
                 {po.status === "pending" && (
                   <button onClick={() => handleOpenConfirm(po)} className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium text-xs transition shadow-sm">
-                    📦 Verifikasi Gudang
+                    Verifikasi Gudang
                   </button>
                 )}
               </div>
@@ -193,7 +209,7 @@ export const PenerimaanForm: React.FC = () => {
         )}
       </div>
 
-      {/* 2. TAMPILAN TABEL BIASA (Hanya muncul di Laptop/Desktop) */}
+      {/* 2. TAMPILAN TABEL (Desktop) */}
       <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -247,11 +263,11 @@ export const PenerimaanForm: React.FC = () => {
                           setShowDetailModal(true);
                         }}
                         className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-xs font-medium transition">
-                        👁️ Lihat Nota
+                        Lihat Nota
                       </button>
                       {po.status === "pending" && (
                         <button onClick={() => handleOpenConfirm(po)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition shadow-sm">
-                          📦 Verifikasi Gudang
+                          Verifikasi Gudang
                         </button>
                       )}
                     </td>
@@ -270,7 +286,6 @@ export const PenerimaanForm: React.FC = () => {
             <h2 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4 border-b pb-2">Buat Purchase Order (PO) Baru</h2>
 
             <form onSubmit={handleSavePO} className="space-y-4">
-              {/* HEADER FORM */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Nomor PO</label>
@@ -310,27 +325,22 @@ export const PenerimaanForm: React.FC = () => {
                 </div>
               </div>
 
-              {/* LIST ITEM PESANAN */}
               <div className="border-t pt-4 mt-2">
                 <label className="block font-semibold text-xs sm:text-sm text-gray-700 mb-2">Daftar Bahan / Barang Dipesan</label>
 
                 <div className="space-y-3">
                   {formPO.items.map((item, idx) => {
-                    // Format data barang untuk React Select
                     const barangOptions = barangs.map((b) => ({
                       value: b.id,
                       label: b.nama_barang,
                     }));
 
                     const selectedOption = barangOptions.find((opt) => Number(opt.value) === Number(item.barang_id));
-
-                    // Ambil data satuan
                     const selectedBarang = barangs.find((b) => Number(b.id) === Number(item.barang_id));
-                    const namaSatuan = selectedBarang ? (typeof selectedBarang.satuan === "object" ? selectedBarang.satuan?.nama : selectedBarang.satuan) : "-";
+                    const namaSatuan = selectedBarang ? (typeof selectedBarang.satuan === "object" ? selectedBarang.satuan?.nama || selectedBarang.satuan?.nama_satuan : selectedBarang.satuan) : "-";
 
                     return (
                       <div key={idx} className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center gap-2 relative">
-                        {/* 1. SELECT BARANG (Full-Width di Mobile) */}
                         <div className="w-full sm:flex-1">
                           <Select
                             options={barangOptions}
@@ -356,9 +366,7 @@ export const PenerimaanForm: React.FC = () => {
                           />
                         </div>
 
-                        {/* BARIS KEDUA PADA MOBILE (Jumlah + Satuan + Tombol Hapus) */}
                         <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-                          {/* INPUT JUMLAH */}
                           <div className="flex-1 sm:flex-none">
                             <input
                               type="number"
@@ -376,10 +384,8 @@ export const PenerimaanForm: React.FC = () => {
                             />
                           </div>
 
-                          {/* BADGE SATUAN OTOMATIS */}
                           <div className="w-20 sm:w-20 px-2 py-2 bg-slate-200 text-slate-700 text-xs font-medium rounded-lg text-center truncate border border-slate-300 flex items-center justify-center h-[38px]">{namaSatuan || "-"}</div>
 
-                          {/* TOMBOL HAPUS BARIS */}
                           <button
                             type="button"
                             onClick={() => {
@@ -401,13 +407,11 @@ export const PenerimaanForm: React.FC = () => {
                   })}
                 </div>
 
-                {/* TOMBOL TAMBAH BARIS */}
                 <button type="button" onClick={handleAddRowItem} className="text-xs text-emerald-600 font-semibold hover:underline mt-3 inline-block">
                   + Tambah Baris Barang
                 </button>
               </div>
 
-              {/* FOOTER BUTTONS */}
               <div className="flex justify-end gap-2 pt-4 border-t mt-4">
                 <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 border rounded-lg text-xs sm:text-sm text-gray-600 hover:bg-gray-50">
                   Batal
@@ -421,10 +425,10 @@ export const PenerimaanForm: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL 2: VERIFIKASI BARANG SAMPAL (STAF GUDANG) */}
+      {/* MODAL 2: VERIFIKASI BARANG MASUK */}
       {showConfirmModal && selectedPO && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-3xl w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-4xl w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="border-b pb-3 mb-4">
               <h2 className="text-lg font-bold text-gray-800">Verifikasi Barang Masuk Gudang</h2>
               <p className="text-xs text-gray-500">
@@ -449,21 +453,23 @@ export const PenerimaanForm: React.FC = () => {
                 />
               </div>
 
+              {/* TABEL DENGAN CHECKBOX DEDUCT PER BARANG */}
               <div className="border rounded-lg overflow-x-auto">
-                <table className="w-full text-left text-sm min-w-[500px]">
+                <table className="w-full text-left text-sm min-w-[650px]">
                   <thead className="bg-gray-50 border-b text-xs font-semibold text-gray-600 uppercase">
                     <tr>
                       <th className="p-3">Nama Barang</th>
                       <th className="p-3 text-center">Jml Dipesan</th>
                       <th className="p-3 text-center">Jml Diterima Fisik</th>
                       <th className="p-3">Kondisi</th>
+                      <th className="p-3 text-center">Langsung Habis Pakai</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {formConfirm.items.map((item: any, idx: number) => (
-                      <tr key={idx}>
+                      <tr key={idx} className="hover:bg-gray-50/50">
                         <td className="p-3 font-medium text-gray-800">{item.nama_barang}</td>
-                        <td className="p-3 text-center bg-gray-50 font-bold text-gray-700">{item.jumlah_pesanan}</td>
+                        <td className="p-3 text-center bg-gray-50 font-semibold text-gray-700">{item.jumlah_pesanan}</td>
                         <td className="p-3 text-center">
                           <input
                             type="number"
@@ -493,11 +499,29 @@ export const PenerimaanForm: React.FC = () => {
                                 items: updated,
                               });
                             }}
-                            className="border rounded p-1 text-xs outline-none">
+                            className="border rounded p-1 text-xs outline-none bg-white">
                             <option value="Baik">Baik</option>
                             <option value="Rusak Sebagian">Rusak Sebagian</option>
                             <option value="Kurang">Kurang</option>
                           </select>
+                        </td>
+                        <td className="p-3 text-center">
+                          <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={item.is_direct_consumption || false}
+                              onChange={(e) => {
+                                const updated = [...formConfirm.items];
+                                updated[idx].is_direct_consumption = e.target.checked;
+                                setFormConfirm({
+                                  ...formConfirm,
+                                  items: updated,
+                                });
+                              }}
+                              className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded border-gray-300 cursor-pointer"
+                            />
+                            <span className="text-xs text-gray-600">Langsung Pakai</span>
+                          </label>
                         </td>
                       </tr>
                     ))}
@@ -521,7 +545,7 @@ export const PenerimaanForm: React.FC = () => {
       {/* MODAL 3: BUKA DETIL NOTA */}
       {showDetailModal && selectedPO && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-2xl w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-3xl w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start border-b pb-3 mb-4">
               <div>
                 <h2 className="text-xl font-bold text-gray-800">Nota PO #{selectedPO.nomor_transaksi}</h2>
@@ -541,7 +565,7 @@ export const PenerimaanForm: React.FC = () => {
 
             <h3 className="font-semibold mb-2 text-xs text-gray-600 uppercase tracking-wider">Rincian Barang Dipesan & Diterima:</h3>
             <div className="border rounded-lg overflow-x-auto mb-6">
-              <table className="w-full text-left text-sm min-w-[450px]">
+              <table className="w-full text-left text-sm min-w-[500px]">
                 <thead className="bg-gray-100 border-b text-xs font-semibold text-gray-600">
                   <tr>
                     <th className="p-2.5">Nama Barang</th>
@@ -549,6 +573,7 @@ export const PenerimaanForm: React.FC = () => {
                     <th className="p-2.5 text-center">Diterima</th>
                     <th className="p-2.5 text-center">Selisih</th>
                     <th className="p-2.5">Kondisi</th>
+                    <th className="p-2.5 text-center">Status Konsumsi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -559,6 +584,9 @@ export const PenerimaanForm: React.FC = () => {
                       <td className="p-2.5 text-center font-bold text-emerald-600">{d.jumlah_diterima}</td>
                       <td className="p-2.5 text-center text-amber-600 font-semibold">{d.selisih}</td>
                       <td className="p-2.5 text-gray-600">{d.kondisi}</td>
+                      <td className="p-2.5 text-center text-xs">
+                        {d.is_direct_consumption ? <span className="text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-medium">Langsung Pakai</span> : <span className="text-gray-600">Masuk Gudang</span>}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

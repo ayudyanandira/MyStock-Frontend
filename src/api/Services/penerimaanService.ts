@@ -20,6 +20,7 @@ export interface ConfirmReceiptItem {
   jumlah_diterima: number;
   kondisi?: string; // 'Baik', 'Rusak Sebagian', dll.
   keterangan?: string;
+  is_direct_consumption?: boolean;
 }
 
 // 4. Interface Payload Konfirmasi Barang Sampai (Staf Gudang)
@@ -76,6 +77,7 @@ export const penerimaanService = {
         jumlah_diterima: Number(item.jumlah_diterima),
         kondisi: item.kondisi || "Baik",
         keterangan: item.keterangan || null,
+        is_direct_consumption: Boolean(item.is_direct_consumption),
       })),
     };
 
