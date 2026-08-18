@@ -39,11 +39,14 @@ const getNormalizedItems = (tx: any) => {
   const rawItems = tx.details || tx.detail || tx.detail_penerimaan || tx.penerimaan_details || tx.items || tx.po?.details || [];
 
   return rawItems.map((item: any) => {
+    // 1. Ekstrak Nama Barang
     const namaBarang = item.barang?.nama_barang || item.barang?.nama || item.nama_barang || "Bahan Pangan";
 
-    const satuan = item.barang?.satuan || item.satuan || "Kg";
+    // 2. Ekstrak Satuan (Aman dari Objek/String & Null)
+    const satuan =
+      item.barang?.satuan?.nama_satuan || item.barang?.satuan?.nama || (typeof item.barang?.satuan === "string" ? item.barang?.satuan : null) || item.satuan?.nama_satuan || (typeof item.satuan === "string" ? item.satuan : null) || "-";
 
-    // Pengecekan Kondisi Sesuai / Tidak Sesuai
+    // 3. Pengecekan Kondisi Sesuai / Tidak Sesuai
     let isSesuai = true;
     if (typeof item.sesuai === "boolean") {
       isSesuai = item.sesuai;
@@ -55,6 +58,7 @@ const getNormalizedItems = (tx: any) => {
       isSesuai = Number(item.jumlah_diterima) === Number(item.jumlah_pesan);
     }
 
+    // 4. Return Objek Tunggal & Bersih (Support Penerimaan, Penggunaan, & Opname)
     return {
       nama_barang: namaBarang,
       jumlah: Number(item.jumlah_diterima ?? item.jumlah ?? item.qty ?? 0),
