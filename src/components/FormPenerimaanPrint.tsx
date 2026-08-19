@@ -1,11 +1,13 @@
 import React from "react";
 
-interface ItemPenerimaan {
+// 1. UPDATE INTERFACE
+export interface ItemPenerimaan {
   nama_barang: string;
-  jumlah: number;
+  jumlah_po: number; // Menggunakan Jumlah PO awal
+  jumlah_diterima?: number; // Jumlah aktual fisik yang datang
   satuan: string;
-  sesuai: boolean;
-  keterangan?: string;
+  kondisi?: string; // 'Baik', 'Rusak', dsb.
+  keterangan_manual?: string; // Catatan tambahan dari user (opsional)
 }
 
 interface FormPenerimaanPrintProps {
@@ -29,15 +31,12 @@ export const FormPenerimaanPrint = React.forwardRef<HTMLDivElement, FormPenerima
             body { 
               -webkit-print-color-adjust: exact; 
             }
-            /* Menjaga baris tabel tidak terbelah di tengah halaman */
             tr { 
               page-break-inside: avoid; 
             }
-            /* Header tabel otomatis muncul di atas jika tabel berlanjut ke Hal 2 */
             thead { 
               display: table-header-group; 
             }
-            /* Memaksa tanda tangan selalu nempel/ikut dengan bagian bawah tabel */
             .signature-container { 
               page-break-inside: avoid; 
               break-inside: avoid; 
@@ -47,20 +46,17 @@ export const FormPenerimaanPrint = React.forwardRef<HTMLDivElement, FormPenerima
 
       {/* KOP SURAT */}
       <div className="flex items-center justify-between border-b-2 border-slate-900 pb-3 mb-4">
-        {/* Logo BGN */}
         <div className="w-20 h-20 flex items-center justify-center shrink-0">
           <img
             src="../assets/Logo-bgn.png"
             alt="Logo BGN"
             className="h-24 w-auto object-contain"
             onError={(e) => {
-              e.currentTarget.src =
-                "https://upload.wikimedia.org/wikipedia/id/thumb/2/29/Logo_Badan_Gizi_Nasional.svg/960px-Logo_Badan_Gizi_Nasional.svg.png?utm_source=id.wikipedia.org&utm_campaign=index&utm_content=thumbnail&_=20241112074750";
+              e.currentTarget.src = "https://upload.wikimedia.org/wikipedia/id/thumb/2/29/Logo_Badan_Gizi_Nasional.svg/960px-Logo_Badan_Gizi_Nasional.svg.png";
             }}
           />
         </div>
 
-        {/* Teks Kop Surat */}
         <div className="text-center flex-1 px-4">
           <h2 className="text-xs md:text-sm font-bold tracking-wider uppercase">BADAN GIZI NASIONAL</h2>
           <h1 className="text-sm md:text-base font-extrabold uppercase">SATUAN PELAYANAN PEMENUHAN GIZI MUNGGUR</h1>
@@ -98,7 +94,7 @@ export const FormPenerimaanPrint = React.forwardRef<HTMLDivElement, FormPenerima
             <th className="border border-slate-900 p-2" rowSpan={2}>
               NAMA BARANG
             </th>
-            <th className="border border-slate-900 p-2 w-24" rowSpan={2}>
+            <th className="border border-slate-900 p-2 w-28" rowSpan={2}>
               JUMLAH
             </th>
             <th className="border border-slate-900 p-1" colSpan={2}>
@@ -114,22 +110,57 @@ export const FormPenerimaanPrint = React.forwardRef<HTMLDivElement, FormPenerima
           </tr>
         </thead>
         <tbody>
-          {items.map((item, index) => (
-            <tr key={index} className="text-center">
-              <td className="border border-slate-900 p-2 text-center">{index + 1}.</td>
-              <td className="border border-slate-900 p-2 text-left font-medium">{item.nama_barang}</td>
-              <td className="border border-slate-900 p-2 text-right">
-                {item.jumlah} {item.satuan}
-              </td>
-              <td className="border border-slate-900 p-2 font-bold">{item.sesuai ? "✓" : "-"}</td>
-              <td className="border border-slate-900 p-2 font-bold">{!item.sesuai ? "✓" : "-"}</td>
-              <td className="border border-slate-900 p-2 text-left text-[11px]">{item.keterangan || "-"}</td>
-            </tr>
-          ))}
+          {items.map((item, index) => {
+            const poQty = Number(item.jumlah_po || 0);
+            const recQty = item.jumlah_diterima !== undefined ? Number(item.jumlah_diterima) : poQty;
+            const selisih = recQty - poQty;
+            const kondisi = item.kondisi || "Baik";
+
+            // 2. LOGIKA KRITERIA KEEPOSAN/KESUAIAN
+            const isSesuai = selisih === 0 && kondisi.toLowerCase() === "baik";
+            const isTidakSesuai = !isSesuai;
+
+            // 3. LOGIKA KETERANGAN DINAMIS
+            const notes: string[] = [];
+            if (selisih > 0) {
+              notes.push(`Datang ${recQty} ${item.satuan} (Lebih +${selisih} ${item.satuan})`);
+            } else if (selisih < 0) {
+              notes.push(`Datang ${recQty} ${item.satuan} (Kurang ${selisih} ${item.satuan})`);
+            }
+
+            if (kondisi.toLowerCase() !== "baik") {
+              notes.push(`Kondisi: ${kondisi}`);
+            }
+
+            if (item.keterangan_manual) {
+              notes.push(item.keterangan_manual);
+            }
+
+            const displayKeterangan = notes.length > 0 ? notes.join(" | ") : "-";
+
+            return (
+              <tr key={index} className="text-center">
+                <td className="border border-slate-900 p-2 text-center">{index + 1}.</td>
+                <td className="border border-slate-900 p-2 text-left font-medium">{item.nama_barang}</td>
+
+                {/* DISPLAY HANYA JUMLAH PO AWAL */}
+                <td className="border border-slate-900 p-2 text-center font-semibold">
+                  {poQty} {item.satuan}
+                </td>
+
+                {/* CENTANG KONDISI */}
+                <td className="border border-slate-900 p-2 font-bold">{isSesuai ? "✓" : "-"}</td>
+                <td className="border border-slate-900 p-2 font-bold">{isTidakSesuai ? "✓" : "-"}</td>
+
+                {/* RINCIAN DI KETERANGAN */}
+                <td className="border border-slate-900 p-2 text-left text-[11px]">{displayKeterangan}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 
-      {/* TANDA TANGAN PETUGAS (Diberi class signature-container agar tidak terpisah) */}
+      {/* TANDA TANGAN PETUGAS */}
       <div className="signature-container flex justify-end text-xs pt-2">
         <div className="text-center w-48 space-y-12">
           <p>Petugas Penerima,</p>

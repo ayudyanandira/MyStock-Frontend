@@ -12,7 +12,6 @@ import { FormPenggunaanPrint } from "../../components/FormPenggunaanPrint";
 import { FormOpnamePrint } from "../../components/FormOpnamePrint";
 
 // 1. Ambil Nomor Nota / Ref
-// Helper Amankan No Nota/Ref (Mendahulukan NO PO dari Penerimaan)
 const getNoNota = (tx: any) => tx?.nomor_transaksi || tx?.no_po || tx?.nomor_po || tx?.no_nota || tx?.nomor_penerimaan || tx?.nomor_penggunaan || tx?.nomor_opname || tx?.kode || (tx?.id ? `TRX-${tx.id}` : "-");
 
 // 2. Format Tanggal
@@ -31,43 +30,51 @@ const getTanggal = (tx: any) => {
   }
 };
 
-// 3. Parser Items & Kondisi Barang (Presisi untuk Penerimaan/PO & Penggunaan)
+// 3. PARSER ITEMS DIPERBARUI (Mendukung pemisahan PO, Diterima, dan Kondisi)
 const getNormalizedItems = (tx: any) => {
   if (!tx) return [];
 
-  // Ambil array detail dari semua kemungkinan nama property Laravel
   const rawItems = tx.details || tx.detail || tx.detail_penerimaan || tx.penerimaan_details || tx.items || tx.po?.details || [];
 
   return rawItems.map((item: any) => {
-    // 1. Ekstrak Nama Barang
+    // 1. Nama Barang
     const namaBarang = item.barang?.nama_barang || item.barang?.nama || item.nama_barang || "Bahan Pangan";
 
-    // 2. Ekstrak Satuan (Aman dari Objek/String & Null)
+    // 2. Satuan
     const satuan =
       item.barang?.satuan?.nama_satuan || item.barang?.satuan?.nama || (typeof item.barang?.satuan === "string" ? item.barang?.satuan : null) || item.satuan?.nama_satuan || (typeof item.satuan === "string" ? item.satuan : null) || "-";
 
-    // 3. Pengecekan Kondisi Sesuai / Tidak Sesuai
+    // 3. Ekstrak Jumlah PO Awal & Jumlah Fisik Diterima
+    const jumlahPo = Number(item.jumlah_pesan ?? item.jumlah_po ?? item.jumlah_pesanan ?? item.jumlah ?? item.qty ?? 0);
+    const jumlahDiterima = item.jumlah_diterima !== undefined && item.jumlah_diterima !== null ? Number(item.jumlah_diterima) : jumlahPo;
+
+    // 4. Kondisi Fisik Barang
+    const kondisiBarang = item.kondisi || item.status_kondisi || "Baik";
+
+    // 5. Status Kesesuian (Fallback jika diperlukan)
     let isSesuai = true;
     if (typeof item.sesuai === "boolean") {
       isSesuai = item.sesuai;
-    } else if (item.kondisi) {
-      isSesuai = String(item.kondisi).toUpperCase() === "SESUAI" || String(item.kondisi).toUpperCase() === "BAIK";
-    } else if (item.status_kondisi) {
-      isSesuai = String(item.status_kondisi).toUpperCase() === "SESUAI";
-    } else if (item.jumlah_diterima !== undefined && item.jumlah_pesan !== undefined) {
-      isSesuai = Number(item.jumlah_diterima) === Number(item.jumlah_pesan);
+    } else {
+      isSesuai = jumlahPo === jumlahDiterima && (kondisiBarang.toUpperCase() === "BAIK" || kondisiBarang.toUpperCase() === "SESUAI");
     }
 
-    // 4. Return Objek Tunggal & Bersih (Support Penerimaan, Penggunaan, & Opname)
     return {
       nama_barang: namaBarang,
-      jumlah: Number(item.jumlah_diterima ?? item.jumlah ?? item.qty ?? 0),
+      // Parameter khusus Form Penerimaan
+      jumlah_po: jumlahPo,
+      jumlah_diterima: jumlahDiterima,
+      kondisi: kondisiBarang,
+      keterangan_manual: item.keterangan || item.catatan || item.alasan || "",
+
+      // Properti standard untuk Penggunaan/Opname
+      jumlah: jumlahDiterima,
       satuan: satuan,
       stok_sistem: Number(item.stok_sistem ?? 0),
       stok_fisik: Number(item.stok_fisik ?? 0),
-      selisih: Number(item.selisih ?? 0),
+      selisih: Number(item.selisih ?? jumlahDiterima - jumlahPo),
       sesuai: isSesuai,
-      keterangan: item.keterangan || item.catatan || item.alasan || "-",
+      keterangan: item.keterangan || item.catatan || "-",
     };
   });
 };
@@ -100,13 +107,10 @@ export const LaporanList: React.FC = () => {
 
         if (jenisForm === "PENERIMAAN") {
           res = await penerimaanService.getPenerimaanList();
-          console.log("🔥 DATA PENERIMAAN DARI API:", res);
         } else if (jenisForm === "PENGGUNAAN") {
           res = await penggunaanService.getPenggunaanList();
-          console.log("🔥 DATA PENGGUNAAN DARI API:", res);
         } else if (jenisForm === "OPNAME") {
           res = await opnameService.getOpnameList();
-          console.log("🔥 DATA OPNAME DARI API:", res);
         }
 
         let dataList: any[] = [];
@@ -284,7 +288,15 @@ export const LaporanList: React.FC = () => {
 
               <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
                 <div ref={printRef} className="p-4 bg-white">
-                  {jenisForm === "PENERIMAAN" && <FormPenerimaanPrint noNota={getNoNota(selectedData)} hariTanggal={getTanggal(selectedData)} waktuPengecekan={selectedData?.waktu || "10:00 WIB"} items={getNormalizedItems(selectedData)} />}
+                  {jenisForm === "PENERIMAAN" && (
+                    <FormPenerimaanPrint
+                      noNota={getNoNota(selectedData)}
+                      hariTanggal={getTanggal(selectedData)}
+                      waktuPengecekan={selectedData?.waktu || "10:00 WIB"}
+                      petugas={selectedData?.user?.name || selectedData?.petugas || "Admin Gudang"}
+                      items={getNormalizedItems(selectedData)}
+                    />
+                  )}
 
                   {jenisForm === "PENGGUNAAN" && <FormPenggunaanPrint noNota={getNoNota(selectedData)} hariTanggal={getTanggal(selectedData)} waktuPengecekan={selectedData?.waktu || "10:00 WIB"} items={getNormalizedItems(selectedData)} />}
 
